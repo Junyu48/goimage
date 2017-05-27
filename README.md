@@ -11,9 +11,13 @@ System Description:
 
 The system will take a picture of a Go board after a match as input 
 and give the result of the game as following quickly (less than 15s) and with no error:
+
 •	Black Total Points
+
 •	White Total Points
+
 •	Winner of the game
+
 This will eliminate potential error made by human and save people the time spend on counting the result and focus on the post-game analysis.
 
 Software and Hardware Tools:
