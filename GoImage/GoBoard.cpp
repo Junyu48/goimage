@@ -1,7 +1,5 @@
 #include "GoBoard.h"
 
-
-
 GoBoard::GoBoard()
 {
 	tiles = std::vector<std::vector<Tile*>>();
@@ -73,5 +71,95 @@ void GoBoard::placeStone(TileType stone, int x, int y)
 	{
 		t->setContents(stone);
 		return;
+	}
+}
+
+Tile ** GoBoard::getTileNeighbours(int x, int y)
+{
+	Tile** neighbours = new Tile*[4];
+	neighbours[0] = getTileAt(x, y + 1);
+	neighbours[1] = getTileAt(x, y - 1);
+	neighbours[2] = getTileAt(x + 1, y);
+	neighbours[3] = getTileAt(x - 1, y);
+	return neighbours;
+}
+
+std::vector<EnclosedArea*> GoBoard::getAreas()
+{
+	return areas;
+}
+
+void GoBoard::findEnclosedAreas()
+{
+	findAreasEnclosedBy(TileType::WhiteStone);
+	removeOutsideAreas();
+	findAreasEnclosedBy(TileType::BlackStone);
+}
+
+void GoBoard::findAreasEnclosedBy(TileType stone)
+{
+	for (std::vector<Tile*> yVector : tiles)
+	{
+		for (Tile* tile : yVector)
+		{
+			if (tile->getContents() != stone)
+			{
+				continue;
+			}
+			Tile* north = getTileAt(tile->getX(), tile->getY() + 1);
+			Tile* south = getTileAt(tile->getX(), tile->getY() - 1);
+			Tile* east = getTileAt(tile->getX() + 1, tile->getY());
+			Tile* west = getTileAt(tile->getX() - 1, tile->getY());
+			if (north->getArea() == nullptr && (north->getContents() == TileType::Empty || north->getContents() == Tile::getOppositeColourStone(stone)))
+			{
+				EnclosedArea* newArea = EnclosedArea::doFloodFill(north, stone, tiles);
+				if (newArea != nullptr)
+				{
+					areas.push_back(newArea);
+				}
+			}
+			if (south->getArea() == nullptr && (south->getContents() == TileType::Empty || south->getContents() == Tile::getOppositeColourStone(stone)))
+			{
+				EnclosedArea* newArea = EnclosedArea::doFloodFill(south, stone, tiles);
+				if (newArea != nullptr)
+				{
+					areas.push_back(newArea);
+				}
+			}
+			if (east->getArea() == nullptr && (east->getContents() == TileType::Empty || east->getContents() == Tile::getOppositeColourStone(stone)))
+			{
+				EnclosedArea* newArea = EnclosedArea::doFloodFill(east, stone, tiles);
+				if (newArea != nullptr)
+				{
+					areas.push_back(newArea);
+				}
+			}
+			if (west->getArea() == nullptr && (west->getContents() == TileType::Empty || west->getContents() == Tile::getOppositeColourStone(stone)))
+			{
+				EnclosedArea* newArea = EnclosedArea::doFloodFill(west, stone, tiles);
+				if (newArea != nullptr)
+				{
+					areas.push_back(newArea);
+				}
+			}
+		}
+	}
+}
+
+void GoBoard::removeOutsideAreas()
+{
+	std::vector<EnclosedArea*> ousideAreas = std::vector<EnclosedArea*>();
+	for (EnclosedArea* e : areas)
+	{
+		if (e->getEnclosingType() == TileType::Empty)
+		{
+			ousideAreas.push_back(e);
+		}
+	}
+	for (EnclosedArea* e : ousideAreas)
+	{
+		auto pos = std::find(areas.begin(), areas.end(), e);
+		areas.erase(pos);
+		delete e;
 	}
 }
