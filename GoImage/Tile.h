@@ -20,13 +20,18 @@ class Tile
 public:
 	Tile(int x, int y);
 	~Tile();
+
 	TileType getContents();
 	void setContents(TileType newContents);
+
 	int getX();
 	int getY();
+
 	EnclosedArea* getArea();
 	void setArea(EnclosedArea* e);
+
 	static TileType getOppositeColourStone(TileType stone);
+
 private:
 	TileType contents;
 	const int xPos;

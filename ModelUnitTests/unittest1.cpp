@@ -49,9 +49,31 @@ namespace ModelUnitTests
 		{
 			GoBoard board = GoBoard();
 			Tile* t = board.getTileAt(10, 10);
-			Assert::AreEqual(static_cast<int>(TileType::Empty), static_cast<int>(t->getContents()), L"Wrong tile contents!");
+			Assert::AreEqual(static_cast<int>(TileType::Empty), static_cast<int>(t->getContents()), L"Wrong tile contents: should be empty!");
 			board.placeStone(TileType::BlackStone, 10, 10);
-			Assert::AreEqual(static_cast<int>(TileType::BlackStone), static_cast<int>(t->getContents()), L"Wrong tile contents!");
+			Assert::AreEqual(static_cast<int>(TileType::BlackStone), static_cast<int>(t->getContents()), L"Wrong tile contents: should be black stone!");
+		}
+		TEST_METHOD(TestBoard_PlaceStone_FailIfOutOfBounds)
+		{
+			GoBoard board = GoBoard();
+			Tile* t = board.getTileAt(0, 0);
+			Tile* t2 = board.getTileAt(20, 20);
+			Assert::AreEqual(static_cast<int>(TileType::WestWall), static_cast<int>(t->getContents()), L"Wrong tile contents: should be west wall!");
+			Assert::AreEqual(static_cast<int>(TileType::EastWall), static_cast<int>(t2->getContents()), L"Wrong tile contents: should be east wall!");
+			board.placeStone(TileType::BlackStone, 0, 0);
+			board.placeStone(TileType::WhiteStone, 20, 20);
+			Assert::AreEqual(static_cast<int>(TileType::WestWall), static_cast<int>(t->getContents()), L"Wrong tile contents: shouldn't have changed to black stone!");
+			Assert::AreEqual(static_cast<int>(TileType::EastWall), static_cast<int>(t2->getContents()), L"Wrong tile contents: shouldn't have changed to white stone!");
+		}
+		TEST_METHOD(TestBoard_PlaceStone_FailIfTileAlreadyOccupied)
+		{
+			GoBoard board = GoBoard();
+			Tile* t = board.getTileAt(10, 10);
+			Assert::AreEqual(static_cast<int>(TileType::Empty), static_cast<int>(t->getContents()), L"Wrong tile contents: should be empty!");
+			board.placeStone(TileType::BlackStone, 10, 10);
+			Assert::AreEqual(static_cast<int>(TileType::BlackStone), static_cast<int>(t->getContents()), L"Wrong tile contents: should be black stone!");
+			board.placeStone(TileType::WhiteStone, 10, 10);
+			Assert::AreEqual(static_cast<int>(TileType::BlackStone), static_cast<int>(t->getContents()), L"Wrong tile contents: should be not be white stone!");
 		}
 	};
 	TEST_CLASS(EnclosedAreaTests)
