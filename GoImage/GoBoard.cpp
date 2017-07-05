@@ -89,6 +89,45 @@ std::vector<EnclosedArea*> GoBoard::getAreas()
 	return areas;
 }
 
+scoreStruct GoBoard::calculateScores()
+{
+	if (areas.size() == 0)
+	{ //the areas have not yet been found
+		findEnclosedAreas();
+	}
+	int whiteNum = 0;
+	int blackNum = 0;
+	int whiteArea = 0;
+	int blackArea = 0;
+	for (std::vector<Tile*> yVector : tiles)
+	{
+		for (Tile* tile : yVector)
+		{
+			TileType tc = tile->getContents();
+			if (tc == TileType::WhiteStone)
+			{
+				whiteNum++;
+			}
+			else if (tc == TileType::BlackStone)
+			{
+				blackNum++;
+			}
+		}
+	}
+	for (EnclosedArea* a : areas)
+	{
+		if (a->getEnclosingType() == TileType::WhiteStone)
+		{
+			whiteArea += a->getNumTilesEnclosed();
+		}
+		if (a->getEnclosingType() == TileType::BlackStone)
+		{
+			blackArea += a->getNumTilesEnclosed();
+		}
+	}
+	return { whiteNum + whiteArea, blackNum + blackArea, whiteArea, blackArea };
+}
+
 void GoBoard::findEnclosedAreas()
 {
 	findAreasEnclosedBy(TileType::WhiteStone);
@@ -110,7 +149,7 @@ void GoBoard::findAreasEnclosedBy(TileType stone)
 			Tile* south = getTileAt(tile->getX(), tile->getY() - 1);
 			Tile* east = getTileAt(tile->getX() + 1, tile->getY());
 			Tile* west = getTileAt(tile->getX() - 1, tile->getY());
-			if (north->getArea() == nullptr && (north->getContents() == TileType::Empty || north->getContents() == Tile::getOppositeColourStone(stone)))
+			if (isSuitableForFloodFill(north, stone))
 			{
 				EnclosedArea* newArea = EnclosedArea::doFloodFill(north, stone, tiles);
 				if (newArea != nullptr)
@@ -118,7 +157,7 @@ void GoBoard::findAreasEnclosedBy(TileType stone)
 					areas.push_back(newArea);
 				}
 			}
-			if (south->getArea() == nullptr && (south->getContents() == TileType::Empty || south->getContents() == Tile::getOppositeColourStone(stone)))
+			if (isSuitableForFloodFill(south, stone))
 			{
 				EnclosedArea* newArea = EnclosedArea::doFloodFill(south, stone, tiles);
 				if (newArea != nullptr)
@@ -126,7 +165,7 @@ void GoBoard::findAreasEnclosedBy(TileType stone)
 					areas.push_back(newArea);
 				}
 			}
-			if (east->getArea() == nullptr && (east->getContents() == TileType::Empty || east->getContents() == Tile::getOppositeColourStone(stone)))
+			if (isSuitableForFloodFill(east, stone))
 			{
 				EnclosedArea* newArea = EnclosedArea::doFloodFill(east, stone, tiles);
 				if (newArea != nullptr)
@@ -134,7 +173,7 @@ void GoBoard::findAreasEnclosedBy(TileType stone)
 					areas.push_back(newArea);
 				}
 			}
-			if (west->getArea() == nullptr && (west->getContents() == TileType::Empty || west->getContents() == Tile::getOppositeColourStone(stone)))
+			if (isSuitableForFloodFill(west, stone))
 			{
 				EnclosedArea* newArea = EnclosedArea::doFloodFill(west, stone, tiles);
 				if (newArea != nullptr)
@@ -162,4 +201,10 @@ void GoBoard::removeOutsideAreas()
 		areas.erase(pos);
 		delete e;
 	}
+}
+
+bool GoBoard::isSuitableForFloodFill(Tile * t, TileType stone)
+{
+	return (t->getArea() == nullptr || t->getArea()->getEnclosingType() == Tile::getOppositeColourStone(stone))
+		&& (t->getContents() == TileType::Empty || t->getContents() == Tile::getOppositeColourStone(stone));
 }

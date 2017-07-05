@@ -1,4 +1,6 @@
 #include "EnclosedArea.h"
+#include<iostream>
+#include<unordered_set>
 
 EnclosedArea::EnclosedArea(TileType enclosedBy)
 	: enclosedBy(enclosedBy)
@@ -28,8 +30,10 @@ void EnclosedArea::assignToArea(Tile* t)
 EnclosedArea* EnclosedArea::doFloodFill(Tile* t, TileType enclosedBy, std::vector<std::vector<Tile*>> tiles)
 {
 	EnclosedArea* resultArea = new EnclosedArea(enclosedBy);
-	std::queue<Tile*> tilesToEvaluate = std::queue<Tile*>();
-	tilesToEvaluate.push(t);
+	std::queue<Tile*> tilesToEvaluate = std::queue<Tile*>(); //A queue for to hold tiles that may be put in the area.
+	std::unordered_set<Tile*> tilesEncountered = std::unordered_set<Tile*>(); //A set to hold tiles that are already in the queue.
+	tilesToEvaluate.push(t);                                                  //I need this because you can't search within a queue.
+	tilesEncountered.insert(t);
 	while(!tilesToEvaluate.empty())
 	{
 		Tile* tile = tilesToEvaluate.front();
@@ -68,7 +72,12 @@ EnclosedArea* EnclosedArea::doFloodFill(Tile* t, TileType enclosedBy, std::vecto
 			{ //The neighbour is already in this room, so we don't need to evaluate it.
 				continue;
 			}
+			if (tilesEncountered.find(neighbour) != tilesEncountered.end())
+			{ //The neighbour is already in the queue.
+				continue;
+			}
 			tilesToEvaluate.push(neighbour);
+			tilesEncountered.insert(neighbour);
 		}
 	}
 	std::vector<Tile*> tilesToRemove = std::vector<Tile*>();
@@ -95,6 +104,10 @@ EnclosedArea* EnclosedArea::doFloodFill(Tile* t, TileType enclosedBy, std::vecto
 	if (resultArea->encounteredWalls.size() >= 3)
 	{
 		resultArea->enclosedBy = TileType::Empty; //The area does not belong to either colour.
+	}
+	if (resultArea->getNumTilesEnclosed() == 0)
+	{
+		resultArea = nullptr;
 	}
 	return resultArea;
 }
