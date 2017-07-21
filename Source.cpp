@@ -1,7 +1,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-#include "EnclosedArea.h"
+#include "GoBoard.h"
 #include <iostream>
 
 using namespace cv;
@@ -28,7 +28,8 @@ int main()
 	{
 		ip_x.clear();
 		ip_y.clear();
-		cap >> bgframe;
+		//cap >> bgframe;
+		bgframe = imread("emptyboard5.jpg");
 		if (bgframe.empty()) break; // end of video stream
 		//imwrite("emptyboard2.jpg", frame);
 
@@ -36,15 +37,18 @@ int main()
 		Mat src = frame.clone();
 		Mat dst;// , cdst;
 		cvtColor(src, dst, CV_RGB2GRAY);
-		Canny(dst, dst, 50, 200, 3);
+		Canny(dst, dst, 100, 200, 3);
 		//adaptiveThreshold(src, dst, 255, ADAPTIVE_THRESH_GAUSSIAN_C, CV_THRESH_BINARY, 15, 11);
 		imshow("edge", dst);
 		//cvtColor(dst, cdst, CV_GRAY2BGR);
 
+		//display crosshair for placement assistance
+		line(frame, Point(frame.cols / 2 + 20, frame.rows / 2), Point(frame.cols / 2 - 20, frame.rows / 2), Scalar(0, 0, 255));
+		line(frame, Point(frame.cols / 2, frame.rows / 2 + 20), Point(frame.cols / 2, frame.rows / 2 - 20), Scalar(0, 0, 255));
+
 		vector<Vec2f> lines;
 		// detect lines
-		HoughLines(dst, lines, 1, CV_PI / 180, 200, 0, 0);
-		int count = 0;
+		HoughLines(dst, lines, 1, CV_PI / 180, 180, 0, 0);
 
 		Point pt1, pt2;
 		vector<double> p_x, p_y;
@@ -103,7 +107,6 @@ int main()
 			pt2.x = ip_x[i];
 			pt2.y = -1000;
 			line(frame, pt1, pt2, Scalar(0, 255, 0), 1, CV_AA);
-count++;
 		}
 
 		sort(p_y.begin(), p_y.end());
@@ -145,7 +148,6 @@ count++;
 			pt2.x = 1000;
 			pt2.y = ip_y[i];
 			line(frame, pt1, pt2, Scalar(0, 255, 0), 1, CV_AA);
-			count++;
 		}
 
 		imshow("this is you, smile! :)", frame);
@@ -153,8 +155,8 @@ count++;
 	}
 	// the camera will be closed automatically upon exit
 	// cap.close();
-	bgframe = imread("emptyboard3.jpg");
-
+	//bgframe = imread("emptyboard4.jpg");
+	//imwrite("emptyboard7.bmp", bgframe);
 	//imshow("gridlines", frame);
 
 	Mat finishedFrame;
@@ -170,7 +172,8 @@ count++;
 		if (waitKey(10) == 27) break; // stop capturing by pressing ESC 
 	}
 
-	finishedFrame = imread("stones.jpg");
+	finishedFrame = imread("stones3.jpg");
+	//imwrite("stones5.bmp", finishedFrame);
 
 	// Global variables
 	Mat frame1, frame2; //current frame
@@ -180,13 +183,13 @@ count++;
 	pMOG2 = createBackgroundSubtractorMOG2();
 
 	frame1 = bgframe.clone();
-	cvtColor(frame1, frame1, CV_RGB2GRAY);
+	cvtColor(frame1, frame1, CV_BGR2GRAY);
 	GaussianBlur(frame1, frame1, Size(5, 5), 0, 0);
 	//	adaptiveThreshold(frame1, frame1, 255, ADAPTIVE_THRESH_GAUSSIAN_C, CV_THRESH_BINARY, 15, 11);
 	imshow("emptyboard1", frame1);
 
 	frame2 = finishedFrame.clone();
-	cvtColor(frame2, frame2, CV_RGB2GRAY);
+	cvtColor(frame2, frame2, CV_BGR2GRAY);
 	GaussianBlur(frame2, frame2, Size(5, 5), 0, 0);
 	//	adaptiveThreshold(frame2, frame2, 255, ADAPTIVE_THRESH_GAUSSIAN_C, CV_THRESH_BINARY, 15, 11);
 	imshow("result1", frame2);
@@ -197,17 +200,34 @@ count++;
 	pMOG2->apply(frame2, fgMaskMOG2);
 
 	medianBlur(fgMaskMOG2, fgMaskMOG2, 5);
+	Mat displayMask = fgMaskMOG2.clone();
+	for (int i = 0; i < 19; i++)
+	{
+		Point pt1, pt2;
+		pt1.x = ip_x[i];
+		pt1.y = 1000;
+		pt2.x = ip_x[i];
+		pt2.y = -1000;
+		line(displayMask, pt1, pt2, Scalar(0, 255, 0), 1, CV_AA);
+		pt1.x = -1000;
+		pt1.y = ip_y[i];
+		pt2.x = 1000;
+		pt2.y = ip_y[i];
+		line(displayMask, pt1, pt2, Scalar(0, 255, 0), 1, CV_AA);
+	}
 
-	imshow("FG Mask MOG2", fgMaskMOG2);
+	imshow("FG Mask MOG2", displayMask);
 
+	//initialize board model
+	GoBoard board = GoBoard();
 
-	vector<vector<gridTile>> tiles();
+	Mat finishedFrame_G = finishedFrame.clone();
+	cvtColor(finishedFrame_G, finishedFrame_G, CV_BGR2GRAY);
+	//detect stones and popultate gridTile vector
 	for (int i = 0; i < ip_x.size(); i++)
 	{
 		for (int j = 0; j < ip_y.size(); j++)
 		{
-			gridTile myTile = gridTile();
-			myTile.ip = Point(ip_x[i], ip_y[j]);
 			int xBoundLeft = static_cast<int>( ip_x[i] - 3);
 			int xBoundRight = xBoundLeft + 6;
 			int yBoundUp = static_cast<int>(ip_y[j] - 3);
@@ -217,10 +237,117 @@ count++;
 			{
 				for (int y = yBoundUp; y < yBoundDown; y++)
 				{
-					mean += fgMaskMOG2.;
+					if (y < 0 || y > fgMaskMOG2.rows || x < 0 || x > fgMaskMOG2.cols)
+					{
+						continue;
+					}
+					mean += fgMaskMOG2.at<uchar>(y, x);
+				}
+			}
+			mean /= 49;
+			if (mean > 25)
+			{
+				int blueMean = 0;
+				int greenMean = 0;
+				int redMean = 0;
+				//mean = 0;
+				for (int x = xBoundLeft-5; x < xBoundRight+5; x++)
+				{
+					for (int y = yBoundUp-5; y < yBoundDown+5; y++)
+					{
+						if (y < 0 || y > fgMaskMOG2.rows || x < 0 || x > fgMaskMOG2.cols)
+						{
+							continue;
+						}
+						Vec3b intensity = finishedFrame.at<Vec3b>(y, x);
+						blueMean += intensity.val[0];
+						greenMean += intensity.val[1];
+						redMean += intensity.val[2];
+					}
+				}
+				blueMean /= 289;
+				greenMean /= 289;
+				redMean /= 289;
+				cout << "the BGR mean at x = " << i << ", y = " << j << "is " << blueMean << "," << greenMean << "," << redMean << endl;
+				if (blueMean < 100 && greenMean < 100 && redMean < 100)
+				{
+					board.placeStone(TileType::BlackStone, i + 1, j + 1);
+					//cout << "the BGR mean at x = " << i << ", y = " << j << "is " << blueMean << "," <<greenMean << "," << redMean << endl;
+				}
+				else/* if (blueMean > 100 && greenMean > 100 && redMean > 100 && (redMean - (blueMean+greenMean)/2 < 10))*/
+				{
+					int blackPixels = 0;
+					for (int x = xBoundLeft; x < xBoundRight; x++)
+					{
+						for (int y = yBoundUp; y < yBoundDown; y++)
+						{
+							if (y < 0 || y > finishedFrame.rows || x < 0 || x > finishedFrame.cols)
+							{
+								continue;
+							}
+							Vec3b c = finishedFrame.at<Vec3b>(y, x);
+							if ((c[0] + c[1] + c[2]) / 3 < 75)
+							{
+								blackPixels++;
+							}
+						}
+					}
+					if (blackPixels <= 5)
+					{
+						board.placeStone(TileType::WhiteStone, i + 1, j + 1);
+					}
+					//cout << "the BGR mean at x = " << i << ", y = " << j << "is " << blueMean << "," << greenMean << "," << redMean << endl;
 				}
 			}
 		}
+	}
+
+	//Display detected stones
+	Mat displayFrame = bgframe.clone();
+	for (int i = 0; i < 19; i++)
+	{
+		Point pt1, pt2;
+		pt1.x = ip_x[i];
+		pt1.y = 1000;
+		pt2.x = ip_x[i];
+		pt2.y = -1000;
+		line(displayFrame, pt1, pt2, Scalar(0, 255, 0), 1, CV_AA);
+		pt1.x = -1000;
+		pt1.y = ip_y[i];
+		pt2.x = 1000;
+		pt2.y = ip_y[i];
+		line(displayFrame, pt1, pt2, Scalar(0, 255, 0), 1, CV_AA);
+		for (int j = 0; j < 19; j++)
+		{
+			TileType stone = board.getTileAt(i+1, j+1)->getContents();
+			if (stone == TileType::WhiteStone || stone == TileType::BlackStone)
+			{
+				Scalar colour = Scalar(0, 0, 0);
+				if (stone == TileType::WhiteStone)
+				{
+					colour = Scalar(255, 255, 255);
+				}
+				circle(displayFrame, Point(ip_x[i], ip_y[j]), 10, colour, -1);
+			}
+
+		}
+	}
+	imshow("Detected stones", displayFrame);
+
+	auto scores = board.calculateScores();
+	cout << "Black scored " << scores.blackScore << " points and enclosed " << scores.blackTotalArea << " tiles.\n";
+	cout << "White scored " << scores.whiteScore << " points and enclosed " << scores.whiteTotalArea << " tiles.\n";
+	if (scores.blackScore > scores.whiteScore)
+	{
+		cout << "Black wins!\n";
+	}
+	else if (scores.blackScore < scores.whiteScore)
+	{
+		cout << "White wins!\n";
+	}
+	else
+	{
+		cout << "There was a tie!\n";
 	}
 
 	waitKey(0);
