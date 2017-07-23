@@ -8,7 +8,7 @@ GoBoard::GoBoard()
 		std::vector<Tile*> rowVector = std::vector<Tile*>();
 		for (size_t j = 0; j < 21; j++)
 		{
-			Tile* t = new Tile(i, j);
+			Tile* t = new Tile(static_cast<int>(i), static_cast<int>(j));
 			if (i == 0)
 			{
 				t->setContents(TileType::WestWall);
@@ -53,18 +53,18 @@ void GoBoard::placeStone(TileType stone, int x, int y)
 {
 	if (stone != TileType::BlackStone && stone != TileType::WhiteStone)
 	{
-		std::cout << "Warning: attempted to place stone of invalid type";
+		std::cout << "Warning: attempted to place stone of invalid type" << "\n";
 		return;
 	}
-	if (x <= 0 || x >= 19 || y <= 0 || y >= 19) //only allow stone placement within the bounds of the board.
+	if (x <= 0 || x > 19 || y <= 0 || y > 19) //only allow stone placement within the bounds of the board.
 	{
-		std::cout << "Warning: attempted to place stone outside of the board";
+		std::cout << "Warning: attempted to place stone outside of the board at x = " << x << ", y = " << y << "\n";
 		return;
 	}
 	Tile* t = tiles[x][y];
 	if (t->getContents() != TileType::Empty)
 	{
-		std::cout << "Warning: attempted to place stone on top of an already existing stone";
+		std::cout << "Warning: attempted to place stone on top of an already existing stone at x = " << x << ", y = " << y << "\n";
 		return;
 	}
 	else

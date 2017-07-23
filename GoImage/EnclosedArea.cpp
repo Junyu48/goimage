@@ -114,7 +114,7 @@ EnclosedArea* EnclosedArea::doFloodFill(Tile* t, TileType enclosedBy, std::vecto
 
 int EnclosedArea::getNumTilesEnclosed()
 {
-	return includedTiles.size();
+	return static_cast<int>(includedTiles.size());
 }
 
 void EnclosedArea::setEncounteredWall(TileType wall)
