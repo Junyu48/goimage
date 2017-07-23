@@ -1,11 +1,13 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
 #include <iostream>
+#include <Windows.h>
+#include <conio.h>
 
 #include "GoBoard.h"
 #include "Tile.h"
 
-#define USE_EXISTING_IMG
+//#define USE_EXISTING_IMG
 //#define SAVE_IMG
 //#define DEBUG
 
@@ -264,6 +266,15 @@ int main()
 
 		imshow("Detecting Grid", frame);
 		if (waitKey(10) == 27) break; // stop capturing by pressing ESC 
+	}
+
+	if (ip_x.size() != 19 || ip_y.size() != 19)
+	{
+		cout << "Error detecting grid, please try again, the program will terminate shortly" << endl;
+		destroyAllWindows();
+		// wait for 3 seconds, then exit
+		Sleep(3000);
+		return 0;
 	}
 
 	Mat finishedFrame;
