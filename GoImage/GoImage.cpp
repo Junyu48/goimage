@@ -397,7 +397,7 @@ int main()
 		cout << "There was a tie!\n";
 	}
 
-	waitKey(0);
+	while (waitKey(10) != 27) {};
 	return 0;
 }
 
