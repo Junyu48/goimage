@@ -136,6 +136,13 @@ void detectGrid(Mat src, Mat dst)
 //detect stones and popultate gridTile vector
 void detectStones(Mat fgMaskMOG2, Mat finishedFrame)
 {
+	// adaptive thresholding on the final board to remove lighting effect for white stone detection
+	// can't use this to detect black stones because thresholded black stones have white circles caused by illumination on them
+	Mat bFinishedFrame = finishedFrame.clone();
+	cvtColor(bFinishedFrame, bFinishedFrame, CV_BGR2GRAY);
+	adaptiveThreshold(bFinishedFrame, bFinishedFrame, 255, CV_ADAPTIVE_THRESH_GAUSSIAN_C, CV_THRESH_BINARY, 11, 12);
+	imshow("thresholded image", bFinishedFrame);
+
 	for (int i = 0; i < ip_x.size(); i++)
 	{
 		for (int j = 0; j < ip_y.size(); j++)
@@ -200,12 +207,13 @@ void detectStones(Mat fgMaskMOG2, Mat finishedFrame)
 					{
 						for (int y = yBoundUp; y < yBoundDown; y++)
 						{
-							if (y < 0 || y > finishedFrame.rows || x < 0 || x > finishedFrame.cols)
+							if (y < 0 || y > bFinishedFrame.rows || x < 0 || x > bFinishedFrame.cols)
 							{
 								continue;
 							}
-							Vec3b c = finishedFrame.at<Vec3b>(y, x);
-							if ((c[0] + c[1] + c[2]) / 3 < 75)
+							uchar c = bFinishedFrame.at<uchar>(y, x);
+							// since it's a binary image, the threshold will either be 0 or 255
+							if (c < 100)
 							{
 								blackPixels++;
 							}
@@ -309,12 +317,20 @@ int main()
 	frame1 = bgframe.clone();
 	cvtColor(frame1, frame1, CV_BGR2GRAY);
 	GaussianBlur(frame1, frame1, Size(5, 5), 0, 0);
-	imshow("Empty Board", frame1);
+
+#ifdef DEBUG
+	imshow("Empty Board Gray", frame1);
+#endif // DEBUG
+	imshow("Empty Board", bgframe);
 
 	frame2 = finishedFrame.clone();
 	cvtColor(frame2, frame2, CV_BGR2GRAY);
 	GaussianBlur(frame2, frame2, Size(5, 5), 0, 0);
-	imshow("Final Board", frame2);
+
+#ifdef DEBUG
+	imshow("Final Board Gray", frame2);
+#endif // DEBUG
+	imshow("Final Board", finishedFrame);
 
 	//update the background model
 	pMOG2->apply(frame1, fgMaskMOG2);
